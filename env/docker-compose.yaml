@@ -1,0 +1,6 @@
+services:
+  flask_api:
+    image: medina10/flask_sqlalchemy_application:v1
+    restart: always
+    ports:
+      - 3000:3000
