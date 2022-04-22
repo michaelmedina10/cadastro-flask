@@ -1,5 +1,6 @@
 from flask_restful import Resource, reqparse
-from model.userRepository import UsuarioRepository
+from model.userRepository import UsuarioRepository, Role, UserRoles
+from flask_user import roles_required
 from flask_jwt_extended import create_access_token, jwt_required, get_jwt
 from config.blacklist import BLACKLIST
 import bcrypt
@@ -10,9 +11,10 @@ attr.add_argument('email', type=str)
 attr.add_argument('senha', type=str, required=True, help="Senha Field is required")
 
 class UserRegister(Resource):
-    @jwt_required()
+    # @jwt_required()
     def post(self):
         data = attr.parse_args()
+        print(data)
         try:
             if not data.get('login') or data.get('login') is None:
                 return {'Message': 'Campo Login é Obrigatório'}, 400
@@ -27,7 +29,14 @@ class UserRegister(Resource):
                 return {'Message': 'Usuário Já Cadastrado'}, 400
             
             data.senha = bcrypt.hashpw(data.senha.encode('utf8'), bcrypt.gensalt())
-            user = UsuarioRepository(**data)
+            # user = UsuarioRepository(**data)
+            user = UsuarioRepository(
+                login= data['login'],
+                email= data['email'],
+                senha=data['senha']
+            )
+            print('USUARIO')
+            user.roles.append(Role(name='Admin'))
             UsuarioRepository.insert(user)
             return {'Message': f'Usuário {user.email} cadastrado com sucesso'}, 201
               
@@ -76,6 +85,7 @@ class Users(Resource):
             return {'Message': 'Erro ao Retornar todos os usuários'}, 400
         
 class User(Resource):
+    @roles_required('Admin')
     def get(self, id):
         try:
             user = UsuarioRepository.getById(id)
